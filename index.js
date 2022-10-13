@@ -26,30 +26,45 @@ app.post("/", upload.single("picture"), async (req, res) => {
   const metadata = await image.metadata();
   console.log(metadata.width, metadata.height);
 
-  let quality = {};
-
-  let width = 0;
+  let param;
+  let value = 0;
   if (req.file.size > 100000) {
-    if (metadata.width <= 320) width = Math.round(metadata.width * (60 / 100));
-    else if (metadata.width <= 720)
-      width = Math.round(metadata.width * (60 / 100));
-    else if (metadata.width <= 1024)
-      width = Math.round(metadata.width * (60 / 100));
-    else if (metadata.width <= 1280)
-      width = Math.round(metadata.width * (60 / 100));
-    else if (metadata.width <= 1920)
-      width = Math.round(metadata.width * (60 / 100));
-    else width = Math.round(metadata.width * (10 / 100));
+    if (metadata.width > metadata.height) {
+      console.log("if");
+      if (metadata.width <= 1920) {
+        value = Math.round(metadata.width * (40 / 100));
+        param = {
+          width: value,
+        };
+      } else {
+        value = Math.round(metadata.width * (10 / 100));
+        param = {
+          width: value,
+        };
+      }
+    } else {
+      console.log("else");
+      if (metadata.height <= 1920) {
+        value = Math.round(metadata.height * (40 / 100));
+        param = {
+          height: value,
+        };
+      } else {
+        value = Math.round(metadata.height * (10 / 100));
+        param = {
+          height: value,
+        };
+      }
+    }
   }
 
-  const ref = `${originalname}-${Date.now()}.jpeg`;
   // const quality = Math.round((100 * 150000) / req.file.size);
 
   // console.log("quality", (100 * 150000) / req.file.size);
   // const newWidth = Math.round(metadata.width * (10 / 100));
-  console.log("new newWidth ", width);
+  let ref = `${originalname}-${Date.now()}.jpeg`;
   await sharp(buffer)
-    .resize({ width: width })
+    .resize(param)
     .jpeg({ quality: 60 })
     .toFile("./uploads/" + ref);
   const link = `http://localhost:3000/${ref}`;
