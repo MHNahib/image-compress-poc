@@ -20,20 +20,37 @@ app.post("/", upload.single("picture"), async (req, res) => {
     }
   });
 
-  // compress image
-  //   console.log("file: ", req.file);
   const { buffer, originalname } = req.file;
 
-  console.log("image size ", req.file.size);
-  console.log("buffer size ", Buffer.byteLength(buffer));
+  const image = await sharp(buffer);
+  const metadata = await image.metadata();
+  console.log(metadata.width, metadata.height);
 
-  const ref = `${originalname}-${Date.now()}.webp`;
-  const quality = Math.round((100 * 150000) / req.file.size);
+  let quality = {};
 
-  console.log("quality", (100 * 150000) / req.file.size);
+  let width = 0;
+  if (req.file.size > 100000) {
+    if (metadata.width <= 320) width = Math.round(metadata.width * (60 / 100));
+    else if (metadata.width <= 720)
+      width = Math.round(metadata.width * (60 / 100));
+    else if (metadata.width <= 1024)
+      width = Math.round(metadata.width * (60 / 100));
+    else if (metadata.width <= 1280)
+      width = Math.round(metadata.width * (60 / 100));
+    else if (metadata.width <= 1920)
+      width = Math.round(metadata.width * (60 / 100));
+    else width = Math.round(metadata.width * (10 / 100));
+  }
 
+  const ref = `${originalname}-${Date.now()}.jpeg`;
+  // const quality = Math.round((100 * 150000) / req.file.size);
+
+  // console.log("quality", (100 * 150000) / req.file.size);
+  // const newWidth = Math.round(metadata.width * (10 / 100));
+  console.log("new newWidth ", width);
   await sharp(buffer)
-    .webp({ quality: quality })
+    .resize({ width: width })
+    .jpeg({ quality: 60 })
     .toFile("./uploads/" + ref);
   const link = `http://localhost:3000/${ref}`;
   return res.json({ link });
