@@ -21,6 +21,7 @@ app.post("/", upload.single("picture"), async (req, res) => {
   });
 
   const { buffer, originalname } = req.file;
+  let ref = `${originalname}-${Date.now()}.jpeg`;
 
   const image = await sharp(buffer);
   const metadata = await image.metadata();
@@ -28,6 +29,8 @@ app.post("/", upload.single("picture"), async (req, res) => {
 
   let param;
   let value = 0;
+
+  // check height and width of the image
   if (req.file.size > 100000) {
     if (metadata.width > metadata.height) {
       console.log("if");
@@ -58,17 +61,43 @@ app.post("/", upload.single("picture"), async (req, res) => {
     }
   }
 
+  // check buffer
+  let newBuffer;
+  try {
+    newBuffer = await sharp(buffer)
+      .resize(param)
+      .jpeg({ quality: 60 })
+      .toBuffer();
+
+    // compress again
+    if (newBuffer.length > 20000) {
+      await sharp(buffer)
+        .resize(param)
+        .jpeg({ quality: 10 })
+        .toFile("./uploads/" + ref);
+      const link = `http://localhost:3000/${ref}`;
+      console.log("buffer", newBuffer.length);
+      return res.json({ link });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+
   // const quality = Math.round((100 * 150000) / req.file.size);
 
   // console.log("quality", (100 * 150000) / req.file.size);
   // const newWidth = Math.round(metadata.width * (10 / 100));
-  let ref = `${originalname}-${Date.now()}.jpeg`;
-  await sharp(buffer)
-    .resize(param)
-    .jpeg({ quality: 60 })
-    .toFile("./uploads/" + ref);
-  const link = `http://localhost:3000/${ref}`;
-  return res.json({ link });
+
+  try {
+    await sharp(buffer)
+      .resize(param)
+      .jpeg({ quality: 60 })
+      .toFile("./uploads/" + ref);
+    const link = `http://localhost:3000/${ref}`;
+    return res.json({ link });
+  } catch (error) {
+    console.log(error);
+  }
 });
 
 // (100 * partialValue) / totalValue;
